@@ -1,11 +1,7 @@
 import time
-import json
-from datetime import datetime
 import os
 from dotenv import load_dotenv
-import gspread
 import streamlit as st
-from google.oauth2 import service_account
 from langchain import hub
 from langchain_groq import ChatGroq
 from langchain.agents import AgentExecutor, create_react_agent
@@ -30,9 +26,11 @@ def execute_search_agent(query):
     tools = [TavilySearchResults(max_results=3)]
     
     construction_prompt = hub.pull("hwchase17/react")
-    # construction_prompt = construction_prompt.partial(
-    #     system_message="You are an AI assistant specialized in construction and architecture. Focus on providing accurate and relevant information about building costs, materials, techniques, and regulations."
-    # )
+    construction_prompt = construction_prompt.partial(
+        system_message="""You are an AI assistant specialized in construction and architecture. 
+        Focus on providing accurate and relevant information about building costs, materials, techniques, and regulations.
+        When using tools, make sure to use the exact tool name as provided. For example, use 'tavily_search_results_json' instead of 'Search the tavily_search_results_json'."""
+    )
     
     agent = create_react_agent(llm, tools, construction_prompt)
     agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
@@ -62,18 +60,11 @@ def is_construction_question(text):
     )
     return int(response.choices[0].message.content)
 
-def append_to_sheet(prompt, generated, answer):
-    """
-    Add query and response to Google Sheet (commented out for now)
-    """
-    # Implement Google Sheets integration here if needed
-    pass
-
 st.title("Construction AI")
 st.subheader("Get Instant Answers to Your Construction Questions")
 st.write("Powered by AI and construction industry expertise.")
 
-query = st.text_input("Ask a construction-related question", "How much will it cost to build a house in Nepal?")
+query = st.text_input("Ask a construction-related question", "What is the average cost per square foot for steel frame construction?")
 
 button = st.empty()
 if button.button("Search"):
@@ -85,7 +76,6 @@ if button.button("Search"):
     
     if is_inappropriate or not is_construction_related:
         st.warning("Please ask a valid construction-related question. Refresh the page to try again.", icon="🚫")
-        append_to_sheet(query, False, "Invalid query")
         st.stop()
     
     start_time = time.time()
@@ -96,8 +86,7 @@ if button.button("Search"):
         st.success(f"Answer generated in {execution_time} seconds.")
         st.info(f"""### Question: {results['input']}
 **Answer:** {results['output']}""")
-        append_to_sheet(results['input'], True, results['output'])
-    except ValueError:
-        st.error("An error occurred while processing your request. Please try again.")
+    except Exception as e:
+        st.error(f"An error occurred while processing your request: {str(e)}. Please try again.")
     
     st.info("Refresh the page to ask another construction-related question.")
