@@ -21,7 +21,7 @@ def execute_search_agent(query):
     """
     llm = ChatGroq(temperature=0,
                    groq_api_key=os.getenv("GROQ_API_KEY"),
-                   model_name="llama3-8b-8192")
+                   model_name="mixtral-8x7b-32768")
     
     tools = [TavilySearchResults(max_results=3)]
     
