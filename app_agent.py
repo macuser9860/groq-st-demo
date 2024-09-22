@@ -26,7 +26,7 @@ def execute_construction_agent(query):
     # Define Groq LLM Model
     llm = ChatGroq(temperature=0,
                 groq_api_key=os.getenv("GROQ_API_KEY"),
-                model_name="llama-3.1-8b-instant")
+                model_name="mixtral-8x7b-32768")
 
     # Web Search Tool
     tools = [TavilySearchResults(max_results=3)]
