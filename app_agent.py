@@ -17,7 +17,7 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def execute_search_agent(query):
     """
-    Execute the search agent 
+    Execute the search agent with a focus on construction-related queries
     """
     llm = ChatGroq(temperature=0,
                    groq_api_key=os.getenv("GROQ_API_KEY"),
@@ -33,7 +33,7 @@ def execute_search_agent(query):
     )
     
     agent = create_react_agent(llm, tools, construction_prompt)
-    agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+    agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True,handle_parsing_errors=True))
     
     return agent_executor.invoke({"input": query}, 
                                  {"callbacks": [StreamlitCallbackHandler(st.container())]})
