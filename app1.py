@@ -48,7 +48,7 @@ if user_prompt:
 
     # Send user's message to the LLM and get a response
     messages = [
-        {"role": "system", "content": "You are a helpful assistant for a construction company. Provide accurate and relevant information about construction rates, materials, techniques, and regulations. Say 'Please ask me construction-related questions' if they ask irrelevant questions."},
+        {"role": "system", "content": "You are a helpful assistant for a construction company. Provide accurate and relevant information about construction rates, materials, techniques, and regulations. Follow Indian Standard Codes for suggestions. Say 'Please ask me construction-related questions' if they ask irrelevant questions."},
         *st.session_state.chat_history
     ]
 
