@@ -1,10 +1,6 @@
-"""
-Groq Agent
-"""
 import time
 import json
 from datetime import datetime
-
 import os
 from dotenv import load_dotenv
 import gspread
@@ -17,102 +13,91 @@ from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_community.callbacks import StreamlitCallbackHandler
 from openai import OpenAI
 
-# client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+# Load environment variables
+load_dotenv()
+
+# Initialize OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-
 
 def execute_search_agent(query):
     """
-    Execute the search agent
+    Execute the search agent with a focus on construction-related queries
     """
-    # Define Groq LLM Model
     llm = ChatGroq(temperature=0,
-                groq_api_key=os.getenv("GROQ_API_KEY"),
-                model_name="mixtral-8x7b-32768")
-
-    # Web Search Tool
+                   groq_api_key=os.getenv("GROQ_API_KEY"),
+                   model_name="llama3-8b-8192")
+    
     tools = [TavilySearchResults(max_results=3)]
-
-    # Pull prompt from LangChain Hub
-    react_prompt = hub.pull("hwchase17/react")
-
-    # Construct the ReAct agent
-    agent = create_react_agent(llm, tools, react_prompt)
-
-    # Create an agent executor by passing in the agent and tools
+    
+    construction_prompt = hub.pull("hwchase17/react")
+    construction_prompt = construction_prompt.partial(
+        system_message="You are an AI assistant specialized in construction and architecture. Focus on providing accurate and relevant information about building costs, materials, techniques, and regulations."
+    )
+    
+    agent = create_react_agent(llm, tools, construction_prompt)
     agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
-
+    
     return agent_executor.invoke({"input": query}, 
-                                 {"callbacks": [st_callback]})
+                                 {"callbacks": [StreamlitCallbackHandler(st.container())]})
 
 def check_text(text):
     """
-    check the text
+    Check if the text is appropriate and construction-related
     """
     response = client.moderations.create(input=text)
     return response.results[0].flagged
 
-def is_fake_question(text):
-    """Check if the given text is safe for work using gpt4 zero-shot classifer."""
+def is_construction_question(text):
+    """Check if the given text is a valid construction-related question."""
     response = client.chat.completions.create(
         model="gpt-3.5-turbo-0125",
-        messages=[{"role": "system", "content": "Is the given text an actual question? If yes, return `1`, else return `0`"},
-                  {"role": "user", "content": text}],
+        messages=[
+            {"role": "system", "content": "Determine if the given text is a valid construction-related question. Return `1` if it is, else return `0`."},
+            {"role": "user", "content": text}
+        ],
         max_tokens=1,
         temperature=0,
         seed=0,
-        logit_bias={"15": 100,
-                    "16": 100}
+        logit_bias={"15": 100, "16": 100}
     )
-
-    result = int(response.choices[0].message.content)
-
-    if result == 1:
-        return 0
-    return 1
+    return int(response.choices[0].message.content)
 
 def append_to_sheet(prompt, generated, answer):
     """
-    Add to GSheet
+    Add query and response to Google Sheet (commented out for now)
     """
-    credentials = service_account.Credentials.from_service_account_info(
-        json.loads(st.secrets["GCP_SERVICE_ACCOUNT"]),
-        scopes=["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-    )
-    gc = gspread.authorize(credentials)
-    sh = gc.open_by_url(st.secrets["PRIVATE_GSHEETS_URL"])
-    worksheet = sh.get_worksheet(0) # Assuming you want to write to the first sheet
-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    worksheet.append_row([current_time, prompt, generated, answer])
+    # Implement Google Sheets integration here if needed
+    pass
 
-st.title("agents go brrrr with groq")
-st.subheader("ReAct Search Agent")
-st.write("powered by Groq, Mixtral, LangChain, and Tavily.")
-query = st.text_input("Search Query", "Why is Groq so fast?")
+st.title("Construction AI")
+st.subheader("Get Instant Answers to Your Construction Questions")
+st.write("Powered by AI and construction industry expertise.")
+
+query = st.text_input("Ask a construction-related question", "How much will it cost to build a house in Nepal?")
+
 button = st.empty()
-
 if button.button("Search"):
     button.empty()
-    with st.spinner("Checking your response..."):
-        is_nsfw = check_text(query)
-        # is_fake_qn = is_fake_question(query)
-    # if is_nsfw or is_fake_qn:
-    if is_nsfw:
-        st.warning("Your query was flagged. Please refresh the page to try again.", icon="🚫")
-        append_to_sheet(query, False, "NIL")
+    
+    with st.spinner("Validating your question..."):
+        is_inappropriate = check_text(query)
+        is_construction_related = is_construction_question(query)
+    
+    if is_inappropriate or not is_construction_related:
+        st.warning("Please ask a valid construction-related question. Refresh the page to try again.", icon="🚫")
+        append_to_sheet(query, False, "Invalid query")
         st.stop()
     
     start_time = time.time()
-    st_callback = StreamlitCallbackHandler(st.container())
+    
     try:
         results = execute_search_agent(query)
+        execution_time = round(time.time() - start_time, 2)
+        st.success(f"Answer generated in {execution_time} seconds.")
+        st.info(f"""### Question: {results['input']}
+**Answer:** {results['output']}""")
+        append_to_sheet(results['input'], True, results['output'])
     except ValueError:
-        st.error("An error occurred while processing your request. Please refresh the page to try again.")
-        st.stop()
-    st.success(f"Completed in {round(time.time() - start_time, 2)} seconds.")
-    st.info(f""" ### QN: {results['input']}
-
-**ANS:** {results['output']}""")
-    append_to_sheet(results['input'], True, results['output'])
-    st.info("Please refresh the page to try a new query.")
+        st.error("An error occurred while processing your request. Please try again.")
+    
+    st.info("Refresh the page to ask another construction-related question.")
