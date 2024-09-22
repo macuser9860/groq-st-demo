@@ -9,7 +9,7 @@ load_dotenv()
 # Streamlit page configuration
 st.set_page_config(
     page_title="Construction AI",
-    page_icon="🦙",
+    page_icon="🏗️",
     layout="centered"
 )
 
