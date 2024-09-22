@@ -5,6 +5,8 @@ import time
 import json
 from datetime import datetime
 
+import os
+from dotenv import load_dotenv
 import gspread
 import streamlit as st
 from google.oauth2 import service_account
@@ -15,7 +17,10 @@ from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_community.callbacks import StreamlitCallbackHandler
 from openai import OpenAI
 
-client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+# client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+
 
 def execute_search_agent(query):
     """
@@ -23,7 +28,7 @@ def execute_search_agent(query):
     """
     # Define Groq LLM Model
     llm = ChatGroq(temperature=0,
-                groq_api_key=st.secrets["GROQ_API_KEY"],
+                groq_api_key=os.getenv("GROQ_API_KEY"),
                 model_name="mixtral-8x7b-32768")
 
     # Web Search Tool
