@@ -17,7 +17,7 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def execute_search_agent(query):
     """
-    Execute the search agent with a focus on construction-related queries
+    Execute the search agent 
     """
     llm = ChatGroq(temperature=0,
                    groq_api_key=os.getenv("GROQ_API_KEY"),
