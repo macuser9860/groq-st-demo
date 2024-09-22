@@ -11,3 +11,4 @@ langchain-groq==0.0.1
 langchainhub==0.1.14
 openai==1.12.0
 python-dotenv
+streamlit
