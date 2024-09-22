@@ -30,9 +30,9 @@ def execute_search_agent(query):
     tools = [TavilySearchResults(max_results=3)]
     
     construction_prompt = hub.pull("hwchase17/react")
-    construction_prompt = construction_prompt.partial(
-        system_message="You are an AI assistant specialized in construction and architecture. Focus on providing accurate and relevant information about building costs, materials, techniques, and regulations."
-    )
+    # construction_prompt = construction_prompt.partial(
+    #     system_message="You are an AI assistant specialized in construction and architecture. Focus on providing accurate and relevant information about building costs, materials, techniques, and regulations."
+    # )
     
     agent = create_react_agent(llm, tools, construction_prompt)
     agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
